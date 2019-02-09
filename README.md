@@ -2,7 +2,7 @@ Asynchronous (asyn-await/promise) function queue.
 
 ## Example
 ``` javascript
-const { Queue } = require('safe-queue');
+const { Queue } = require('@ex1st/tiny-queue');
 
 const queue = new Queue(async function (task) {
   const r = await task;
@@ -57,7 +57,7 @@ queue.on('drain', function () {
 ```
 
 ## Install
-`npm install safe-queue`
+`npm install @ex1st/tiny-queue`
 
 ## API
 
