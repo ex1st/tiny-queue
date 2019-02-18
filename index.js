@@ -85,6 +85,14 @@ class Queue extends EventEmitter {
 	kill () {
 		this[_storage].clear();
 	}
+
+	/**
+	 * a function returning execution state of the queue
+	 * @return {Boolean} is running
+	 */
+	running () {
+		return this[_running];
+	}
 }
 
 Object.defineProperties(Queue.prototype, {
