@@ -1,7 +1,7 @@
 {
   "author": "Ilya Shatokhin <eXamp1e@mail.ru>",
   "name": "@ex1st/tiny-queue",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "repository": {
     "type": "git",
     "url": "git@github.com:ex1st/tiny-queue.git"
@@ -24,7 +24,7 @@
     "node": ">= v8.0.0"
   },
   "devDependencies": {
-    "eslint": "^5.13.0"
+    "eslint": "^5.15.1"
   },
   "scripts": {},
   "dependencies": {}

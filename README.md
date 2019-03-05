@@ -51,6 +51,9 @@ queue.on('timeout', function (task) {
   console.log('task timed out:', task);
 });
 
+console.log(queue.running()); // true
+console.log(queue.length()); // 4
+
 queue.on('drain', function () {
   console.log(result); // [1,2,3,4]
 });
@@ -77,6 +80,12 @@ a function that resumes the processing of the queued tasks.
 
 ### `queue.kill()`
 a function that empties remaining tasks from the queue
+
+### `queue.running()`
+a function returning execution state of the queue
+
+### `queue.length()`
+a function returning the queue's size
 
 ## Events
 

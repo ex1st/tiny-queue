@@ -93,6 +93,14 @@ class Queue extends EventEmitter {
 	running () {
 		return this[_running];
 	}
+
+	/**
+	 * a function returning the queue's size
+	 * @return {integer} count of tasks
+	 */
+	length () {
+		return this[_storage].size;
+	}
 }
 
 Object.defineProperties(Queue.prototype, {
