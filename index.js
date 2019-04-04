@@ -7,6 +7,7 @@ const _storage = Symbol("storage"),
 	_paused = Symbol("paused"),
 	_execute = Symbol("execute"),
 	_next = Symbol("next"),
+	_filter = Symbol("filter"),
 	_running = Symbol("running");
 
 class Queue extends EventEmitter {
@@ -43,6 +44,12 @@ class Queue extends EventEmitter {
 				configurable: false,
 				writable: true,
 				value: false
+			},
+			[_filter]: {
+				enumerable: false,
+				configurable: false,
+				writable: true,
+				value: () => true
 			}
 		});
 
@@ -73,8 +80,10 @@ class Queue extends EventEmitter {
 	 */
 	push (...args) {
 		for (const task of args) {
-			this[_storage].add(task);
-			this[_next]();
+			if (this[_filter](task)) {
+				this[_storage].add(task);
+				this[_next]();
+			}
 		}
 	}
 
@@ -100,6 +109,14 @@ class Queue extends EventEmitter {
 	 */
 	length () {
 		return this[_storage].size;
+	}
+
+	/**
+	 * a function set a custom filter
+	 * @param {Function} fn function(task) which filters incoming tasks
+	 */
+	setFilter (fn) {
+		this[_filter] = fn;
 	}
 }
 

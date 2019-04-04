@@ -87,6 +87,9 @@ a function returning execution state of the queue
 ### `queue.length()`
 a function returning the queue's size
 
+### `queue.setFilter(fn)`
+a function set a custom filter
+
 ## Events
 
 ### `queue.on('done', (result, task) => {})`
