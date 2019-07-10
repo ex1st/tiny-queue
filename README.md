@@ -64,9 +64,10 @@ queue.on('drain', function () {
 
 ## API
 
-### `const queue = new Queue(worker, { timeout })`
+### `const queue = new Queue(worker, { timeout, filter })`
 * `worker` function
-* `timeout` is optional
+* `timeout` integer, is optional
+* `filter` function, is optional
 
 ## Instance methods
 ### `queue.push(...tasks)`

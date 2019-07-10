@@ -8,6 +8,7 @@ const _storage = Symbol("storage"),
 	_execute = Symbol("execute"),
 	_next = Symbol("next"),
 	_filter = Symbol("filter"),
+	_timeout = Symbol("timeout"),
 	_running = Symbol("running");
 
 class Queue extends EventEmitter {
@@ -15,45 +16,27 @@ class Queue extends EventEmitter {
 	 * Create a queue
 	 * @param {Function} worker
 	 * @param {Object} [params]
-	 * @param {number} [params.timeout]
+	 * @param {number} [params.timeout] timeout
+	 * @param {number} [params.filter] function(task) which filters incoming tasks
 	 */
-	constructor (worker, { timeout = 0 } = { }) {
+	constructor (worker, { timeout = 0, filter } = { }) {
+		if (typeof fn === "function")
+			throw new Error("Worker is not a function");
+
 		super();
 
-		Object.defineProperties(this, {
-			[_storage]: {
-				enumerable: false,
-				configurable: false,
-				writable: false,
-				value: new Set()
-			},
-			[_worker]: {
-				enumerable: false,
-				configurable: false,
-				writable: false,
-				value: worker
-			},
-			[_paused]: {
-				enumerable: false,
-				configurable: false,
-				writable: true,
-				value: false
-			},
-			[_running]: {
-				enumerable: false,
-				configurable: false,
-				writable: true,
-				value: false
-			},
-			[_filter]: {
-				enumerable: false,
-				configurable: false,
-				writable: true,
-				value: () => true
-			}
-		});
+		this[_storage] = new Set();
+		this[_paused] = false;
+		this[_running] = false;
+		this[_worker] = worker;
 
-		this.timeout = timeout;
+		if (timeout) {
+			this[_timeout] = timeout;
+		}
+
+		if (filter) {
+			this[_filter] = filter;
+		}
 	}
 
 	/**
@@ -116,76 +99,95 @@ class Queue extends EventEmitter {
 	 * @param {Function} fn function(task) which filters incoming tasks
 	 */
 	setFilter (fn) {
+		if (typeof fn === "function")
+			throw new Error("Filter is not a function");
+
 		this[_filter] = fn;
 	}
-}
 
-Object.defineProperties(Queue.prototype, {
-	[_next]: {
-		enumerable: false,
-		configurable: false,
-		writable: false,
-		value: function () {
-			if (this[_paused] || this[_running] || this[_storage].size === 0) {
-				return;
+	/**
+	 * @private
+	 */
+	[_next] () {
+		if (this[_paused] || this[_running] || this[_storage].size === 0) {
+			return;
+		}
+
+		this[_running] = true;
+		const task = this[_storage].values().next().value;
+		this[_storage].delete(task);
+
+		if (this[_storage].size === 0) {
+			this.emit('empty');
+		}
+
+		this[_execute](task);
+	}
+
+	/**
+	 * @private
+	 * @param {*} task
+	 * @returns {Promise<null>}
+	 */
+	async [_execute] (task) {
+		let r, timeout;
+
+		try {
+			if (this[_timeout]) {
+				await Promise.race([
+					new Promise(resolve => {
+						r = resolve;
+						timeout = setTimeout(() => {
+							this.emit('timeout', task);
+							r = null;
+							resolve();
+						}, this[_timeout]);
+					}),
+					(async () => {
+						const res = await this[_worker](task);
+						this.emit('done', res, task);
+					})()
+				]);
+			} else {
+				const res = await this[_worker](task);
+				this.emit('done', res, task);
 			}
+		} catch (error) {
+			this.emit('error', error, task);
+		} finally {
+			this[_running] = false;
 
-			this[_running] = true;
-			const task = this[_storage].values().next().value;
-			this[_storage].delete(task);
+			if (r) {
+				clearTimeout(timeout);
+				r();
+			}
 
 			if (this[_storage].size === 0) {
-				this.emit('empty');
-			}
-
-			this[_execute](task);
-		}
-	},
-	[_execute]: {
-		enumerable: false,
-		configurable: false,
-		writable: false,
-		value: async function (task) {
-			let r, timeout;
-
-			try {
-				if (this.timeout) {
-					await Promise.race([
-						new Promise(resolve => {
-							r = resolve;
-							timeout = setTimeout(() => {
-								this.emit('timeout', task);
-								r = null;
-								resolve();
-							}, this.timeout);
-						}),
-						(async () => {
-							const res = await this[_worker](task);
-							this.emit('done', res, task);
-						})()
-					]);
-				} else {
-					const res = await this[_worker](task);
-					this.emit('done', res, task);
-				}
-			} catch (error) {
-				this.emit('error', error, task);
-			} finally {
-				this[_running] = false;
-
-				if (r) {
-					clearTimeout(timeout);
-					r();
-				}
-
-				if (this[_storage].size === 0) {
-					this.emit('drain');
-				} else {
-					this[_next]();
-				}
+				this.emit('drain');
+			} else {
+				this[_next]();
 			}
 		}
 	}
-});
+
+	/**
+	 * @private
+	 * @param {*} task
+	 * @returns {boolean}
+	 */
+	/* eslint-disable-next-line */
+	[_filter] (task) {
+		return true;
+	}
+
+	/**
+	 * @private
+	 * @param {*} task
+	 * @returns {Promise<null>}
+	 */
+	/* eslint-disable-next-line */
+	async [_worker](task) {
+	}
+}
 
 module.exports.Queue = Queue;
