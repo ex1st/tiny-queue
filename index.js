@@ -20,7 +20,7 @@ class Queue extends EventEmitter {
 	 * @param {number} [params.filter] function(task) which filters incoming tasks
 	 */
 	constructor (worker, { timeout = 0, filter } = { }) {
-		if (typeof fn === "function")
+		if (typeof worker !== "function")
 			throw new Error("Worker is not a function");
 
 		super();
@@ -99,7 +99,7 @@ class Queue extends EventEmitter {
 	 * @param {Function} fn function(task) which filters incoming tasks
 	 */
 	setFilter (fn) {
-		if (typeof fn === "function")
+		if (typeof fn !== "function")
 			throw new Error("Filter is not a function");
 
 		this[_filter] = fn;
