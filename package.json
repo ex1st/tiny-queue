@@ -29,7 +29,7 @@
     "node": ">= v8.0.0"
   },
   "devDependencies": {
-    "eslint": "^6.2.2"
+    "eslint": "^6.8.0"
   },
   "scripts": {},
   "dependencies": {}
