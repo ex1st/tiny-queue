@@ -1,61 +1,76 @@
-const { Queue } = require('./index.js'),
-	assert = require("assert");
+/* eslint-disable no-unused-vars */
+"use strict";
 
-const queue = new Queue(async function (task) {
-  const r = await task;
-  return r;
-}, { timeout: 2000 });
+const { Queue } = require('./index.js');
+const assert = require('node:assert');
+const { setTimeout } = require('node:timers/promises');
 
+const queue = new Queue(async (task) => task(), { timeout: 2000 });
+const tracker = new assert.CallTracker();
+
+let i = 0;
 const result = [];
 
 // add task to the queue
-queue.push(new Promise(resolve => {
-  setTimeout(() => {
-    resolve(1);
-  }, 1000);
-}));
+queue.push(async () => {
+	await setTimeout(1000);
+	return 1;
+});
 
 // add task to the queue
-queue.push(new Promise(resolve => {
-  setTimeout(() => {
-    resolve(2);
-  }, 500);
-}));
+queue.push(async () => {
+	await setTimeout(500);
+	return 2;
+});
 
 // add task to the queue
 queue.push(
-  new Promise(resolve => {
-    setTimeout(() => {
-      resolve(3);
-    }, 100);
-  }),
-  new Promise(resolve => {
-    setTimeout(() => {
-      resolve(4);
-    }, 50);
-  })
+	async () => {
+		await setTimeout(100);
+		return 3;
+	},
+	async () => {
+		await setTimeout(50);
+		return 4;
+	}
 );
 
 // add task to the queue
-queue.push(new Promise(resolve => {
-  setTimeout(() => {
-    resolve(5);
-  }, 5000);
-}));
+queue.push(async () => {
+	await setTimeout(2500);
+	return 5;
+});
 
-assert.equal(queue.length(), 4);
-assert.equal(queue.running(), true);
+assert.strictEqual(queue.length(), 4);
+assert.strictEqual(queue.running(), true);
 
 queue.on('done', function (res, task) {
-  result.push(res);
+	console.log('done', res);
+	result.push(res);
+
+	assert.strictEqual(res, ++i);
 });
 
-queue.on('timeout', function (task) {
-  console.log('task timed out:', task);
-});
+queue.on('timeout', tracker.calls(async function (task) {
+	console.log('timeout');
+}, 1));
 
 queue.on('drain', function () {
-  assert.equal(queue.running(), false);
-  console.log(result); // 1,2,3,4
-  assert.equal(result.join(","), [1,2,3,4].join(","));
+	assert.strictEqual(queue.running(), false);
+	console.log('drain', result); // [ 1, 2, 3, 4 ]
+	assert.deepStrictEqual(result, [1, 2, 3, 4]);
 });
+
+process.on('exit', () => {
+	tracker.verify();
+});
+
+/* should be printed:
+    done 1
+    done 2
+    done 3
+    done 4
+    timeout
+    drain [ 1, 2, 3, 4 ]
+    done 5
+*/

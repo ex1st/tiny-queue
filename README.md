@@ -2,7 +2,7 @@ Asynchronous (asyn-await/promise) function queue.
 
 ## Example
 ``` javascript
-const { Queue } = require('@ex1st/tiny-queue');
+import { Queue } from '@ex1st/tiny-queue';
 
 const queue = new Queue(async function (task) {
   const r = await task;
@@ -40,7 +40,7 @@ queue.push(new Promise(resolve => {
 queue.push(new Promise(resolve => {
   setTimeout(() => {
     resolve(5);
-  }, 5000);
+  }, 2500);
 }));
 
 queue.on('done', function (res, task) {

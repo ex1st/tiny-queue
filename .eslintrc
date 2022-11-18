@@ -4,10 +4,14 @@
         "es6": true
     },
     "parserOptions": {
-        "ecmaVersion": 2017
+        "ecmaVersion": 2022,
+        "ecmaFeatures" : {
+            "impliedStrict": true
+        }
     },
     "globals": { },
-    "extends": ["eslint:recommended"],
+    "plugins": ["sonarjs"],
+    "extends": ["eslint:recommended","plugin:sonarjs/recommended"],
     "rules": {
         "no-console": [0],
         "block-scoped-var": 2,
