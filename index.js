@@ -1,8 +1,7 @@
 const { EventEmitter } = require('node:events');
-const Denque = require('denque');
 
 class Queue extends EventEmitter {
-	#_storage = new Denque();
+	#_storage = new Set();
 	#_paused = false;
 	#_running = false;
 	#_timeout = 0;
@@ -17,7 +16,7 @@ class Queue extends EventEmitter {
 	 * @param {number} [params.timeout] timeout
 	 * @param {Function} [params.filter] function(task) which filters incoming tasks
 	 */
-	constructor (worker, { timeout = 0, filter } = { }) {
+	constructor(worker, { timeout = 0, filter } = { }) {
 		super();
 
 		if (typeof worker !== "function")
@@ -38,14 +37,14 @@ class Queue extends EventEmitter {
 	/**
 	 * a function that pauses the processing of tasks
 	 */
-	pause () {
+	pause() {
 		this.#_paused = true;
 	}
 
 	/**
 	 * a function that resumes the processing of the queued tasks
 	 */
-	resume () {
+	resume() {
 		if (!this.#_paused)
 			return;
 
@@ -57,10 +56,10 @@ class Queue extends EventEmitter {
 	 * add new task(s) to the queue
 	 * @param {...any} tasks
 	 */
-	push (...args) {
+	push(...args) {
 		for (const task of args) {
 			if (this.#_filter(task)) {
-				this.#_storage.push(task);
+				this.#_storage.add(task);
 				this.#_next();
 			}
 		}
@@ -70,7 +69,7 @@ class Queue extends EventEmitter {
 	 * a function that empties
 	 * remaining tasks from the queue
 	 */
-	kill () {
+	kill() {
 		this.#_storage.clear();
 	}
 
@@ -78,7 +77,7 @@ class Queue extends EventEmitter {
 	 * a function returning execution state of the queue
 	 * @return {Boolean} is running
 	 */
-	running () {
+	running() {
 		return this.#_running;
 	}
 
@@ -86,15 +85,15 @@ class Queue extends EventEmitter {
 	 * a function returning the queue's size
 	 * @return {integer} count of tasks
 	 */
-	length () {
-		return this.#_storage.length;
+	length() {
+		return this.#_storage.size;
 	}
 
 	/**
 	 * a function set a custom filter
 	 * @param {Function} fn function(task) which filters incoming tasks
 	 */
-	setFilter (fn) {
+	setFilter(fn) {
 		if (typeof fn !== "function")
 			throw new Error("Filter is not a function");
 
@@ -104,15 +103,18 @@ class Queue extends EventEmitter {
 	/**
 	 * @private
 	 */
-	#_next () {
-		if (this.#_paused || this.#_running || this.#_storage.length === 0) {
+	#_next() {
+		if (this.#_paused || this.#_running || this.#_storage.size === 0) {
 			return;
 		}
 
 		this.#_running = true;
-		const task = this.#_storage.shift();
 
-		if (this.#_storage.length === 0) {
+		const [task] = this.#_storage;
+		this.#_storage.delete(task);
+
+		if (this.#_storage.size === 0) {
+			this.#_storage.clear();
 			this.emit('empty');
 		}
 
@@ -124,7 +126,7 @@ class Queue extends EventEmitter {
 	 * @param {*} task
 	 * @returns {Promise<null>}
 	 */
-	async #_execute (task) {
+	async #_execute(task) {
 		let r, timeout;
 
 		try {
@@ -138,7 +140,7 @@ class Queue extends EventEmitter {
 							resolve();
 						}, this.#_timeout);
 					}),
-					(async () => {
+					(async() => {
 						const res = await this.#_worker(task);
 						this.emit('done', res, task);
 					})()
@@ -157,7 +159,7 @@ class Queue extends EventEmitter {
 				r();
 			}
 
-			if (this.#_storage.length === 0) {
+			if (this.#_storage.size === 0) {
 				this.emit('drain');
 			} else {
 				this.#_next();

@@ -1,6 +1,9 @@
 Changelog
 =========
 
+### 3.0.0 / 2023-07-19
+* Remove `denque` lib
+
 ### 2.0.0 / 2022-11-18
 * Use `denque` lib
 * Use private fields instead of Symbol
