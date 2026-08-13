@@ -26,16 +26,21 @@
   ],
   "main": "index.js",
   "engines": {
-    "node": ">= v16.0.0"
+    "node": ">= v24.19.0"
   },
   "dependencies": {
   },
   "devDependencies": {
-    "eslint": "^8.45.0",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-sonarjs": "^0.19.0"
+    "@eslint/compat": "^2.1.0",
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "eslint": "^10.8.1",
+    "eslint-plugin-n": "^18.3.0",
+    "eslint-plugin-no-floating-promise": "^2.0.0",
+    "eslint-plugin-sonarjs": "^4.2.0"
   },
   "scripts": {
-    "test": "node test.js"
+    "test": "node --test",
+    "benchmark": "node benchmark.mjs"
   }
 }

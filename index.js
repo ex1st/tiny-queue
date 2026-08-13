@@ -1,4 +1,4 @@
-const { EventEmitter } = require('node:events');
+const { EventEmitter } = require("node:events");
 
 class Queue extends EventEmitter {
 	#_storage = new Set();
@@ -6,7 +6,7 @@ class Queue extends EventEmitter {
 	#_running = false;
 	#_timeout = 0;
 	#_worker = async task => task;
-	// eslint-disable-next-line no-unused-vars
+
 	#_filter = task => true;
 
 	/**
@@ -19,19 +19,23 @@ class Queue extends EventEmitter {
 	constructor(worker, { timeout = 0, filter } = { }) {
 		super();
 
-		if (typeof worker !== "function")
+		if (typeof worker !== "function") {
 			throw new Error("Worker is not a function");
+		}
 
-		if (timeout && !Number.isFinite(timeout))
+		if (timeout && !Number.isFinite(timeout)) {
 			throw new Error("Timeout is not a number");
+		}
 
 		this.#_worker = worker;
 
-		if (timeout)
+		if (timeout) {
 			this.#_timeout = timeout;
+		}
 
-		if (filter)
+		if (filter) {
 			this.setFilter(filter);
+		}
 	}
 
 	/**
@@ -45,8 +49,9 @@ class Queue extends EventEmitter {
 	 * a function that resumes the processing of the queued tasks
 	 */
 	resume() {
-		if (!this.#_paused)
+		if (!this.#_paused) {
 			return;
+		}
 
 		this.#_paused = false;
 		this.#_next();
@@ -94,8 +99,9 @@ class Queue extends EventEmitter {
 	 * @param {Function} fn function(task) which filters incoming tasks
 	 */
 	setFilter(fn) {
-		if (typeof fn !== "function")
+		if (typeof fn !== "function") {
 			throw new Error("Filter is not a function");
+		}
 
 		this.#_filter = fn;
 	}
@@ -115,7 +121,7 @@ class Queue extends EventEmitter {
 
 		if (this.#_storage.size === 0) {
 			this.#_storage.clear();
-			this.emit('empty');
+			this.emit("empty");
 		}
 
 		this.#_execute(task);
@@ -127,7 +133,7 @@ class Queue extends EventEmitter {
 	 * @returns {Promise<null>}
 	 */
 	async #_execute(task) {
-		let r, timeout;
+		let r; let timeout;
 
 		try {
 			if (this.#_timeout) {
@@ -135,22 +141,22 @@ class Queue extends EventEmitter {
 					new Promise(resolve => {
 						r = resolve;
 						timeout = setTimeout(() => {
-							this.emit('timeout', task);
+							this.emit("timeout", task);
 							r = null;
 							resolve();
 						}, this.#_timeout);
 					}),
 					(async() => {
 						const res = await this.#_worker(task);
-						this.emit('done', res, task);
+						this.emit("done", res, task);
 					})()
 				]);
 			} else {
 				const res = await this.#_worker(task);
-				this.emit('done', res, task);
+				this.emit("done", res, task);
 			}
 		} catch (error) {
-			this.emit('error', error, task);
+			this.emit("error", error, task);
 		} finally {
 			this.#_running = false;
 
@@ -160,7 +166,7 @@ class Queue extends EventEmitter {
 			}
 
 			if (this.#_storage.size === 0) {
-				this.emit('drain');
+				this.emit("drain");
 			} else {
 				this.#_next();
 			}
