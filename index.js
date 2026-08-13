@@ -23,7 +23,7 @@ class Queue extends EventEmitter {
 			throw new Error("Worker is not a function");
 		}
 
-		if (timeout && !Number.isFinite(timeout)) {
+		if (timeout != null && (!Number.isFinite(timeout) || !Number.isInteger(timeout) || timeout < 0)) {
 			throw new Error("Timeout is not a number");
 		}
 
@@ -136,6 +136,15 @@ class Queue extends EventEmitter {
 		let r; let timeout;
 
 		try {
+			const worker = (async() => {
+				try {
+					const res = await this.#_worker(task);
+					this.emit("done", res, task);
+				} catch (error) {
+					this.emit("error", error, task);
+				}
+			})();
+
 			if (this.#_timeout) {
 				await Promise.race([
 					new Promise(resolve => {
@@ -146,14 +155,10 @@ class Queue extends EventEmitter {
 							resolve();
 						}, this.#_timeout);
 					}),
-					(async() => {
-						const res = await this.#_worker(task);
-						this.emit("done", res, task);
-					})()
+					worker
 				]);
 			} else {
-				const res = await this.#_worker(task);
-				this.emit("done", res, task);
+				await worker;
 			}
 		} catch (error) {
 			this.emit("error", error, task);
